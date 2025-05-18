@@ -362,6 +362,117 @@ createSidebarButton("Highlight", 0)
 createSidebarButton("Speed", 1)
 createSidebarButton("Jump", 2)
 createSidebarButton("InfiniteJump", 3)
+createSidebarButton("AutoBuy", 3)
 
 -- Show default
 showPage("Highlight")
+--------------------------
+-- Page 4: Seed Auto-Buy
+--------------------------
+local autoBuyPage = Instance.new("Frame")
+autoBuyPage.Name = "AutoBuy"
+autoBuyPage.Size = UDim2.new(1, -100, 1, 0)
+autoBuyPage.Position = UDim2.new(0, 100, 0, 0)
+autoBuyPage.BackgroundTransparency = 1
+autoBuyPage.Visible = false
+autoBuyPage.Parent = pages
+
+local seedListLabel = Instance.new("TextLabel")
+seedListLabel.Size = UDim2.new(1, -20, 0, 30)
+seedListLabel.Position = UDim2.new(0, 10, 0, 10)
+seedListLabel.BackgroundTransparency = 1
+seedListLabel.Text = "Auto-Buy Seeds"
+seedListLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+seedListLabel.Font = Enum.Font.GothamBold
+seedListLabel.TextSize = 18
+seedListLabel.TextXAlignment = Enum.TextXAlignment.Left
+seedListLabel.Parent = autoBuyPage
+
+local seedScrollingFrame = Instance.new("ScrollingFrame")
+seedScrollingFrame.Size = UDim2.new(1, -20, 1, -80)
+seedScrollingFrame.Position = UDim2.new(0, 10, 0, 50)
+seedScrollingFrame.CanvasSize = UDim2.new(0, 0, 5, 0)
+seedScrollingFrame.ScrollBarThickness = 6
+seedScrollingFrame.BackgroundTransparency = 1
+seedScrollingFrame.Parent = autoBuyPage
+
+local seedListLayout = Instance.new("UIListLayout")
+seedListLayout.Padding = UDim.new(0, 5)
+seedListLayout.Parent = seedScrollingFrame
+
+local seedsToBuy = {}
+
+-- Helper to create toggle rows
+local function createSeedRow(seedName)
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(1, 0, 0, 30)
+	row.BackgroundTransparency = 1
+	row.Parent = seedScrollingFrame
+
+	local toggle = Instance.new("TextButton")
+	toggle.Size = UDim2.new(0, 80, 1, 0)
+	toggle.Position = UDim2.new(0, 0, 0, 0)
+	toggle.Text = "OFF"
+	toggle.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+	toggle.TextColor3 = Color3.new(1, 1, 1)
+	toggle.Font = Enum.Font.GothamBold
+	toggle.TextSize = 14
+	toggle.Parent = row
+	Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 6)
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -90, 1, 0)
+	label.Position = UDim2.new(0, 90, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = seedName
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.Font = Enum.Font.Gotham
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = row
+
+	local selected = false
+	toggle.MouseButton1Click:Connect(function()
+		selected = not selected
+		toggle.Text = selected and "ON" or "OFF"
+		toggle.BackgroundColor3 = selected and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(100, 0, 0)
+
+		seedsToBuy[seedName] = selected
+	end)
+end
+
+-- Dynamically find all seeds from the shop
+task.spawn(function()
+	local shop = workspace:FindFirstChild("Shop") or workspace:FindFirstChild("SeedShop")
+	if not shop then return end
+
+	for _, item in pairs(shop:GetDescendants()) do
+		if item:IsA("ProximityPrompt") and item.Name:lower():find("seed") then
+			local seedName = item.Parent.Name
+			if not seedScrollingFrame:FindFirstChild(seedName) then
+				createSeedRow(seedName)
+			end
+		end
+	end
+end)
+
+-- Auto-buy loop
+task.spawn(function()
+	while task.wait(1) do
+		for seedName, shouldBuy in pairs(seedsToBuy) do
+			if shouldBuy then
+				local shop = workspace:FindFirstChild("Shop") or workspace:FindFirstChild("SeedShop")
+				if shop then
+					for _, item in pairs(shop:GetDescendants()) do
+						if item:IsA("ProximityPrompt") and item.Parent.Name == seedName then
+							if item.Enabled then
+								fireproximityprompt(item)
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end)
+
