@@ -367,7 +367,7 @@ createSidebarButton("AutoBuy", 3)
 -- Show default
 showPage("Highlight")
 --------------------------
--- Page 4: Seed Auto-Buy
+-- Page 4: AutoBuy Seeds
 --------------------------
 local autoBuyPage = Instance.new("Frame")
 autoBuyPage.Name = "AutoBuy"
@@ -377,102 +377,213 @@ autoBuyPage.BackgroundTransparency = 1
 autoBuyPage.Visible = false
 autoBuyPage.Parent = pages
 
-local seedListLabel = Instance.new("TextLabel")
-seedListLabel.Size = UDim2.new(1, -20, 0, 30)
-seedListLabel.Position = UDim2.new(0, 10, 0, 10)
-seedListLabel.BackgroundTransparency = 1
-seedListLabel.Text = "Auto-Buy Seeds"
-seedListLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-seedListLabel.Font = Enum.Font.GothamBold
-seedListLabel.TextSize = 18
-seedListLabel.TextXAlignment = Enum.TextXAlignment.Left
-seedListLabel.Parent = autoBuyPage
+local autoBuyLabel = Instance.new("TextLabel")
+autoBuyLabel.Size = UDim2.new(1, -20, 0, 30)
+autoBuyLabel.Position = UDim2.new(0, 10, 0, 10)
+autoBuyLabel.BackgroundTransparency = 1
+autoBuyLabel.Text = "AutoBuy Seeds"
+autoBuyLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoBuyLabel.Font = Enum.Font.GothamBold
+autoBuyLabel.TextSize = 20
+autoBuyLabel.TextXAlignment = Enum.TextXAlignment.Left
+autoBuyLabel.Parent = autoBuyPage
 
-local seedScrollingFrame = Instance.new("ScrollingFrame")
-seedScrollingFrame.Size = UDim2.new(1, -20, 1, -80)
-seedScrollingFrame.Position = UDim2.new(0, 10, 0, 50)
-seedScrollingFrame.CanvasSize = UDim2.new(0, 0, 5, 0)
-seedScrollingFrame.ScrollBarThickness = 6
-seedScrollingFrame.BackgroundTransparency = 1
-seedScrollingFrame.Parent = autoBuyPage
+local seedListFrame = Instance.new("ScrollingFrame")
+seedListFrame.Size = UDim2.new(1, -20, 1, -50)
+seedListFrame.Position = UDim2.new(0, 10, 0, 50)
+seedListFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+seedListFrame.BorderSizePixel = 0
+seedListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+seedListFrame.ScrollBarThickness = 6
+seedListFrame.Parent = autoBuyPage
+Instance.new("UICorner", seedListFrame).CornerRadius = UDim.new(0, 8)
 
-local seedListLayout = Instance.new("UIListLayout")
-seedListLayout.Padding = UDim.new(0, 5)
-seedListLayout.Parent = seedScrollingFrame
+local uiListLayout = Instance.new("UIListLayout")
+uiListLayout.Padding = UDim.new(0, 6)
+uiListLayout.Parent = seedListFrame
 
-local seedsToBuy = {}
+-- Seeds data with rarity, name, cost, harvests
+local seedsByRarity = {
+	["Common Seeds"] = {
+		{ Name = "Carrot", Cost = 10, Harvests = "Single" },
+		{ Name = "Strawberry", Cost = 50, Harvests = "Multiple" }
+	},
+	["Uncommon Seeds"] = {
+		{ Name = "Blueberry", Cost = 400, Harvests = "Multiple" },
+		{ Name = "Orange Tulip", Cost = 600, Harvests = "Single" }
+	},
+	["Rare Seeds"] = {
+		{ Name = "Tomato", Cost = 800, Harvests = "Multiple" },
+		{ Name = "Corn", Cost = 1300, Harvests = "Multiple" },
+		{ Name = "Daffodil", Cost = 1000, Harvests = "Single" }
+	},
+	["Legendary Seeds"] = {
+		{ Name = "Watermelon", Cost = 2500, Harvests = "Single" },
+		{ Name = "Pumpkin", Cost = 3000, Harvests = "Single" },
+		{ Name = "Apple", Cost = 3250, Harvests = "Multiple" },
+		{ Name = "Bamboo", Cost = 4000, Harvests = "Single" }
+	},
+	["Mythical Seeds"] = {
+		{ Name = "Coconut", Cost = 6000, Harvests = "Multiple" },
+		{ Name = "Cactus", Cost = 15000, Harvests = "Multiple" },
+		{ Name = "Dragon Fruit", Cost = 50000, Harvests = "Multiple" },
+		{ Name = "Mango", Cost = 100000, Harvests = "Multiple" }
+	},
+	["Divine Seeds"] = {
+		{ Name = "Grape", Cost = 850000, Harvests = "Multiple" },
+		{ Name = "Mushroom", Cost = 150000, Harvests = "Single" },
+		{ Name = "Pepper", Cost = 1000000, Harvests = "Multiple" },
+		{ Name = "Cacao", Cost = 2500000, Harvests = "Multiple" },
+		{ Name = "Beanstalk", Cost = nil, Harvests = "Prismatic" }
+	}
+}
 
--- Helper to create toggle rows
-local function createSeedRow(seedName)
-	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, 0, 0, 30)
-	row.BackgroundTransparency = 1
-	row.Parent = seedScrollingFrame
+-- Track selected seeds and amounts
+local selectedSeeds = {}
 
-	local toggle = Instance.new("TextButton")
-	toggle.Size = UDim2.new(0, 80, 1, 0)
-	toggle.Position = UDim2.new(0, 0, 0, 0)
-	toggle.Text = "OFF"
-	toggle.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
-	toggle.TextColor3 = Color3.new(1, 1, 1)
-	toggle.Font = Enum.Font.GothamBold
-	toggle.TextSize = 14
-	toggle.Parent = row
-	Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 6)
-
+-- Helper function: create label for rarity group
+local function createRarityLabel(name)
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -90, 1, 0)
-	label.Position = UDim2.new(0, 90, 0, 0)
+	label.Size = UDim2.new(1, 0, 0, 24)
 	label.BackgroundTransparency = 1
-	label.Text = seedName
-	label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	label.Font = Enum.Font.Gotham
-	label.TextSize = 14
+	label.TextColor3 = Color3.fromRGB(200, 200, 255)
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 18
+	label.Text = name
 	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Parent = row
-
-	local selected = false
-	toggle.MouseButton1Click:Connect(function()
-		selected = not selected
-		toggle.Text = selected and "ON" or "OFF"
-		toggle.BackgroundColor3 = selected and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(100, 0, 0)
-
-		seedsToBuy[seedName] = selected
-	end)
+	label.Parent = seedListFrame
+	return label
 end
 
--- Dynamically find all seeds from the shop
-task.spawn(function()
-	local shop = workspace:FindFirstChild("Shop") or workspace:FindFirstChild("SeedShop")
-	if not shop then return end
+-- Add seeds UI
+for rarity, seedList in pairs(seedsByRarity) do
+	createRarityLabel(rarity)
+	for _, seed in ipairs(seedList) do
+		local seedFrame = Instance.new("Frame")
+		seedFrame.Size = UDim2.new(1, -10, 0, 40)
+		seedFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		seedFrame.Parent = seedListFrame
+		Instance.new("UICorner", seedFrame).CornerRadius = UDim.new(0, 6)
 
-	for _, item in pairs(shop:GetDescendants()) do
-		if item:IsA("ProximityPrompt") and item.Name:lower():find("seed") then
-			local seedName = item.Parent.Name
-			if not seedScrollingFrame:FindFirstChild(seedName) then
-				createSeedRow(seedName)
+		-- Seed name label
+		local nameLabel = Instance.new("TextLabel")
+		nameLabel.Size = UDim2.new(0.4, 0, 1, 0)
+		nameLabel.Position = UDim2.new(0, 5, 0, 0)
+		nameLabel.BackgroundTransparency = 1
+		nameLabel.TextColor3 = Color3.new(1,1,1)
+		nameLabel.Font = Enum.Font.GothamBold
+		nameLabel.TextSize = 16
+		nameLabel.Text = seed.Name
+		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+		nameLabel.Parent = seedFrame
+
+		-- Cost label
+		local costLabel = Instance.new("TextLabel")
+		costLabel.Size = UDim2.new(0.2, 0, 1, 0)
+		costLabel.Position = UDim2.new(0.4, 0, 0, 0)
+		costLabel.BackgroundTransparency = 1
+		costLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
+		costLabel.Font = Enum.Font.GothamBold
+		costLabel.TextSize = 14
+		costLabel.Text = (seed.Cost and (seed.Cost.." Sheckles")) or "N/A"
+		costLabel.TextXAlignment = Enum.TextXAlignment.Left
+		costLabel.Parent = seedFrame
+
+		-- Harvest label
+		local harvestLabel = Instance.new("TextLabel")
+		harvestLabel.Size = UDim2.new(0.2, 0, 1, 0)
+		harvestLabel.Position = UDim2.new(0.6, 0, 0, 0)
+		harvestLabel.BackgroundTransparency = 1
+		harvestLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+		harvestLabel.Font = Enum.Font.Gotham
+		harvestLabel.TextSize = 14
+		harvestLabel.Text = seed.Harvests
+		harvestLabel.TextXAlignment = Enum.TextXAlignment.Left
+		harvestLabel.Parent = seedFrame
+
+		-- Amount input box
+		local amountInput = Instance.new("TextBox")
+		amountInput.Size = UDim2.new(0.15, 0, 0.8, 0)
+		amountInput.Position = UDim2.new(0.8, 0, 0.1, 0)
+		amountInput.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+		amountInput.TextColor3 = Color3.new(1,1,1)
+		amountInput.Font = Enum.Font.GothamBold
+		amountInput.TextSize = 14
+		amountInput.ClearTextOnFocus = false
+		amountInput.PlaceholderText = "Qty"
+		amountInput.Text = "1"
+		amountInput.Parent = seedFrame
+		Instance.new("UICorner", amountInput).CornerRadius = UDim.new(0, 4)
+
+		-- Toggle button for selecting seed
+		local toggleButton = Instance.new("TextButton")
+		toggleButton.Size = UDim2.new(0.1, 0, 0.8, 0)
+		toggleButton.Position = UDim2.new(0.95, -40, 0.1, 0)
+		toggleButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+		toggleButton.TextColor3 = Color3.new(1,1,1)
+		toggleButton.Font = Enum.Font.GothamBold
+		toggleButton.TextSize = 14
+		toggleButton.Text = "OFF"
+		toggleButton.Parent = seedFrame
+		Instance.new("UICorner", toggleButton).CornerRadius = UDim.new(0, 4)
+
+		local seedName = seed.Name
+		-- Toggle logic
+		toggleButton.MouseButton1Click:Connect(function()
+			if selectedSeeds[seedName] then
+				selectedSeeds[seedName] = nil
+				toggleButton.Text = "OFF"
+				toggleButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+			else
+				selectedSeeds[seedName] = tonumber(amountInput.Text) or 1
+				toggleButton.Text = "ON"
+				toggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
 			end
-		end
-	end
-end)
+		end)
 
--- Auto-buy loop
-task.spawn(function()
-	while task.wait(1) do
-		for seedName, shouldBuy in pairs(seedsToBuy) do
-			if shouldBuy then
-				local shop = workspace:FindFirstChild("Shop") or workspace:FindFirstChild("SeedShop")
-				if shop then
-					for _, item in pairs(shop:GetDescendants()) do
-						if item:IsA("ProximityPrompt") and item.Parent.Name == seedName then
-							if item.Enabled then
-								fireproximityprompt(item)
-							end
-						end
-					end
+		-- Update amount if changed while selected
+		amountInput.FocusLost:Connect(function()
+			if selectedSeeds[seedName] then
+				local val = tonumber(amountInput.Text)
+				if val and val > 0 then
+					selectedSeeds[seedName] = val
+				else
+					amountInput.Text = tostring(selectedSeeds[seedName])
 				end
 			end
-		end
+		end)
 	end
+end
+
+uiListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	seedListFrame.CanvasSize = UDim2.new(0, 0, 0, uiListLayout.AbsoluteContentSize.Y + 10)
 end)
 
+-- Dummy buySeed function: Replace this with your actual in-game purchase function
+local function buySeed(seedName, amount)
+	print("Buying", amount, seedName)
+	-- YOUR in-game buy logic here, e.g.
+	-- game:GetService("ReplicatedStorage").Events.BuySeed:FireServer(seedName, amount)
+end
+
+-- Auto-buy loop: checks every 3 seconds for selected seeds in stock and buys them
+coroutine.wrap(function()
+	while true do
+		wait(3)
+		for seedName, amount in pairs(selectedSeeds) do
+			-- Here, detect if the seed is in stock in the shop (replace with your actual detection)
+			local inStock = false
+			-- Example detection logic (replace this with your real one):
+			local shopSeeds = {} -- fetch shop seeds from game UI or data
+			for _, s in pairs(shopSeeds) do
+				if s.Name == seedName and s.Stock and s.Stock > 0 then
+					inStock = true
+					break
+				end
+			end
+			if inStock then
+				buySeed(seedName, amount)
+			end
+		end
+	end
+end)()
