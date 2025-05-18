@@ -1,6 +1,16 @@
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
+
+-- Settings system using attributes
+local function getSetting(name, default)
+	return localPlayer:GetAttribute(name) or default
+end
+
+local function setSetting(name, value)
+	localPlayer:SetAttribute(name, value)
+end
 
 -- GUI Setup
 local screenGui = Instance.new("ScreenGui")
@@ -8,9 +18,9 @@ screenGui.Name = "MainUIPanel"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- Main frame (container)
+-- Main frame
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 400, 0, 200)
+mainFrame.Size = UDim2.new(0, 400, 0, 250)
 mainFrame.Position = UDim2.new(0, 50, 0, 50)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BorderSizePixel = 0
@@ -21,76 +31,76 @@ mainFrame.Parent = screenGui
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
 Instance.new("UIStroke", mainFrame).Thickness = 2
 
--- Control buttons container (Minimize, Maximize, Close)
-local controlsFrame = Instance.new("Frame")
-controlsFrame.Size = UDim2.new(1, -20, 0, 30)
-controlsFrame.Position = UDim2.new(0, 10, 0, 10)
-controlsFrame.BackgroundTransparency = 1
-controlsFrame.Parent = mainFrame
+-- Top bar
+local topBar = Instance.new("Frame")
+topBar.Size = UDim2.new(1, 0, 0, 30)
+topBar.Position = UDim2.new(0, 0, 0, 0)
+topBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+topBar.Parent = mainFrame
 
--- Minimize Button
-local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 30, 1, 0)
-minimizeBtn.Position = UDim2.new(1, -100, 0, 0)
-minimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-minimizeBtn.Text = "–"
-minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
-minimizeBtn.Font = Enum.Font.GothamBold
-minimizeBtn.TextSize = 24
-minimizeBtn.Parent = controlsFrame
-Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 6)
+-- Close, Minimize, Maximize buttons
+local function createControlButton(name, color, pos, onClick)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 30, 0, 30)
+	btn.Position = pos
+	btn.BackgroundColor3 = color
+	btn.Text = name
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 14
+	btn.Parent = topBar
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+	btn.MouseButton1Click:Connect(onClick)
+end
 
--- Maximize Button
-local maximizeBtn = Instance.new("TextButton")
-maximizeBtn.Size = UDim2.new(0, 30, 1, 0)
-maximizeBtn.Position = UDim2.new(1, -65, 0, 0)
-maximizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-maximizeBtn.Text = "⬜"
-maximizeBtn.TextColor3 = Color3.new(1, 1, 1)
-maximizeBtn.Font = Enum.Font.GothamBold
-maximizeBtn.TextSize = 18
-maximizeBtn.Parent = controlsFrame
-Instance.new("UICorner", maximizeBtn).CornerRadius = UDim.new(0, 6)
+local minimized = false
 
--- Close Button
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 30, 1, 0)
-closeBtn.Position = UDim2.new(1, -30, 0, 0)
-closeBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
-closeBtn.Text = "X"
-closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 18
-closeBtn.Parent = controlsFrame
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+createControlButton("-", Color3.fromRGB(100, 100, 0), UDim2.new(1, -90, 0, 0), function()
+	if not minimized then
+		for _, child in pairs(mainFrame:GetChildren()) do
+			if child ~= topBar then child.Visible = false end
+		end
+		minimized = true
+	else
+		for _, child in pairs(mainFrame:GetChildren()) do
+			child.Visible = true
+		end
+		minimized = false
+	end
+end)
+
+createControlButton("+", Color3.fromRGB(0, 100, 0), UDim2.new(1, -60, 0, 0), function()
+	mainFrame.Size = UDim2.new(0, 400, 0, 250)
+end)
+
+createControlButton("X", Color3.fromRGB(100, 0, 0), UDim2.new(1, -30, 0, 0), function()
+	screenGui:Destroy()
+end)
 
 -- Sidebar
 local sidebar = Instance.new("Frame")
-sidebar.Size = UDim2.new(0, 100, 1, 0)
-sidebar.Position = UDim2.new(0, 0, 0, 0)
+sidebar.Size = UDim2.new(0, 100, 1, -30)
+sidebar.Position = UDim2.new(0, 0, 0, 30)
 sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 sidebar.Parent = mainFrame
 Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 8)
 
--- Content pages
+-- Pages
 local pages = Instance.new("Folder")
 pages.Name = "Pages"
 pages.Parent = mainFrame
 
--- Page switch function
 local function showPage(pageName)
 	for _, page in ipairs(pages:GetChildren()) do
 		page.Visible = (page.Name == pageName)
 	end
 end
 
---------------------------
--- Page 1: Highlight ESP
---------------------------
+-- Highlight ESP Page
 local highlightPage = Instance.new("Frame")
 highlightPage.Name = "Highlight"
-highlightPage.Size = UDim2.new(1, -100, 1, 0)
-highlightPage.Position = UDim2.new(0, 100, 0, 0)
+highlightPage.Size = UDim2.new(1, -100, 1, -30)
+highlightPage.Position = UDim2.new(0, 100, 0, 30)
 highlightPage.BackgroundTransparency = 1
 highlightPage.Parent = pages
 
@@ -116,7 +126,8 @@ toggleButton.TextSize = 14
 toggleButton.Parent = highlightPage
 Instance.new("UICorner", toggleButton).CornerRadius = UDim.new(0, 8)
 
--- ESP logic
+local connections = {}
+
 local function highlightCharacter(character)
 	if character:FindFirstChild("HumanoidRootPart") and not character:FindFirstChild("PlayerESP") then
 		local highlight = Instance.new("Highlight")
@@ -136,9 +147,6 @@ local function removeHighlight(character)
 	if esp then esp:Destroy() end
 end
 
-local connections = {}
-local highlightingEnabled = false
-
 local function enableESP()
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= localPlayer then
@@ -149,7 +157,6 @@ local function enableESP()
 			end
 		end
 	end
-
 	local joinConn = Players.PlayerAdded:Connect(function(player)
 		if player ~= localPlayer then
 			local conn = player.CharacterAdded:Connect(highlightCharacter)
@@ -171,26 +178,25 @@ local function disableESP()
 	connections = {}
 end
 
+local highlightingEnabled = getSetting("HighlightEnabled", false)
+
+toggleButton.Text = highlightingEnabled and "ON" or "OFF"
+toggleButton.BackgroundColor3 = highlightingEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(100, 0, 0)
+if highlightingEnabled then enableESP() end
+
 toggleButton.MouseButton1Click:Connect(function()
 	highlightingEnabled = not highlightingEnabled
-	if highlightingEnabled then
-		toggleButton.Text = "ON"
-		toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-		enableESP()
-	else
-		toggleButton.Text = "OFF"
-		toggleButton.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
-		disableESP()
-	end
+	setSetting("HighlightEnabled", highlightingEnabled)
+	toggleButton.Text = highlightingEnabled and "ON" or "OFF"
+	toggleButton.BackgroundColor3 = highlightingEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(100, 0, 0)
+	if highlightingEnabled then enableESP() else disableESP() end
 end)
 
---------------------------
--- Page 2: Speed Control
---------------------------
+-- Speed Page
 local speedPage = Instance.new("Frame")
 speedPage.Name = "Speed"
-speedPage.Size = UDim2.new(1, -100, 1, 0)
-speedPage.Position = UDim2.new(0, 100, 0, 0)
+speedPage.Size = UDim2.new(1, -100, 1, -30)
+speedPage.Position = UDim2.new(0, 100, 0, 30)
 speedPage.BackgroundTransparency = 1
 speedPage.Visible = false
 speedPage.Parent = pages
@@ -212,7 +218,7 @@ speedInput.Position = UDim2.new(0, 10, 0, 60)
 speedInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 speedInput.TextColor3 = Color3.new(1, 1, 1)
 speedInput.Font = Enum.Font.GothamBold
-speedInput.Text = "16"
+speedInput.Text = tostring(getSetting("WalkSpeed", 16))
 speedInput.TextSize = 14
 speedInput.ClearTextOnFocus = false
 speedInput.PlaceholderText = "Speed"
@@ -236,17 +242,16 @@ applyButton.MouseButton1Click:Connect(function()
 		local speed = tonumber(speedInput.Text)
 		if speed and speed > 0 then
 			humanoid.WalkSpeed = speed
+			setSetting("WalkSpeed", speed)
 		end
 	end
 end)
 
---------------------------
--- Page 3: Jump Control
---------------------------
+-- Jump Page
 local jumpPage = Instance.new("Frame")
 jumpPage.Name = "Jump"
-jumpPage.Size = UDim2.new(1, -100, 1, 0)
-jumpPage.Position = UDim2.new(0, 100, 0, 0)
+jumpPage.Size = UDim2.new(1, -100, 1, -30)
+jumpPage.Position = UDim2.new(0, 100, 0, 30)
 jumpPage.BackgroundTransparency = 1
 jumpPage.Visible = false
 jumpPage.Parent = pages
@@ -268,7 +273,7 @@ jumpInput.Position = UDim2.new(0, 10, 0, 60)
 jumpInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 jumpInput.TextColor3 = Color3.new(1, 1, 1)
 jumpInput.Font = Enum.Font.GothamBold
-jumpInput.Text = "50"
+jumpInput.Text = tostring(getSetting("JumpPower", 50))
 jumpInput.TextSize = 14
 jumpInput.ClearTextOnFocus = false
 jumpInput.PlaceholderText = "Jump"
@@ -293,69 +298,70 @@ applyJump.MouseButton1Click:Connect(function()
 		if jump and jump > 0 then
 			humanoid.UseJumpPower = true
 			humanoid.JumpPower = jump
+			setSetting("JumpPower", jump)
 		end
 	end
 end)
 
--- Sidebar buttons
-local function createSidebarButton(text, pageIndex)
+-- Infinite Jump Page
+local infJumpPage = Instance.new("Frame")
+infJumpPage.Name = "InfiniteJump"
+infJumpPage.Size = UDim2.new(1, -100, 1, -30)
+infJumpPage.Position = UDim2.new(0, 100, 0, 30)
+infJumpPage.BackgroundTransparency = 1
+infJumpPage.Visible = false
+infJumpPage.Parent = pages
+
+local infJumpToggle = Instance.new("TextButton")
+infJumpToggle.Size = UDim2.new(0, 200, 0, 40)
+infJumpToggle.Position = UDim2.new(0, 20, 0, 20)
+infJumpToggle.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+infJumpToggle.Text = "Infinite Jump: OFF"
+infJumpToggle.TextColor3 = Color3.new(1, 1, 1)
+infJumpToggle.Font = Enum.Font.GothamBold
+infJumpToggle.TextSize = 16
+infJumpToggle.Parent = infJumpPage
+Instance.new("UICorner", infJumpToggle).CornerRadius = UDim.new(0, 10)
+
+local infJumpEnabled = false
+
+infJumpToggle.MouseButton1Click:Connect(function()
+	infJumpEnabled = not infJumpEnabled
+	infJumpToggle.Text = infJumpEnabled and "Infinite Jump: ON" or "Infinite Jump: OFF"
+	infJumpToggle.BackgroundColor3 = infJumpEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(100, 0, 0)
+end)
+
+UserInputService.JumpRequest:Connect(function()
+	if infJumpEnabled then
+		local character = localPlayer.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		end
+	end
+end)
+
+-- Sidebar Buttons
+local function createSidebarButton(name, order)
 	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(1, -10, 0, 40)
-	button.Position = UDim2.new(0, 5, 0, 5 + pageIndex * 45)
-	button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	button.Text = text
+	button.Size = UDim2.new(1, 0, 0, 40)
+	button.Position = UDim2.new(0, 0, 0, 10 + (order * 45))
+	button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 	button.TextColor3 = Color3.new(1, 1, 1)
 	button.Font = Enum.Font.GothamBold
-	button.TextSize = 18
+	button.TextSize = 14
+	button.Text = name
 	button.Parent = sidebar
 	Instance.new("UICorner", button).CornerRadius = UDim.new(0, 6)
 	button.MouseButton1Click:Connect(function()
-		showPage(text)
+		showPage(name)
 	end)
-	return button
 end
 
 createSidebarButton("Highlight", 0)
 createSidebarButton("Speed", 1)
 createSidebarButton("Jump", 2)
+createSidebarButton("InfiniteJump", 3)
 
--- Show default page
+-- Show default
 showPage("Highlight")
-
--- Minimize / Maximize / Close logic
-local isMinimized = false
-local fullSize = mainFrame.Size
-
-minimizeBtn.MouseButton1Click:Connect(function()
-	if not isMinimized then
-		for _, child in ipairs(mainFrame:GetChildren()) do
-			if child ~= sidebar and child ~= controlsFrame then
-				child.Visible = false
-			end
-		end
-		mainFrame.Size = UDim2.new(0, 100, 0, 40)
-		isMinimized = true
-	else
-		mainFrame.Size = fullSize
-		for _, child in ipairs(mainFrame:GetChildren()) do
-			if child ~= sidebar and child ~= controlsFrame then
-				child.Visible = true
-			end
-		end
-		isMinimized = false
-	end
-end)
-
-maximizeBtn.MouseButton1Click:Connect(function()
-	mainFrame.Size = fullSize
-	for _, child in ipairs(mainFrame:GetChildren()) do
-		if child ~= sidebar and child ~= controlsFrame then
-			child.Visible = true
-		end
-	end
-	isMinimized = false
-end)
-
-closeBtn.MouseButton1Click:Connect(function()
-	screenGui:Destroy()
-end)
